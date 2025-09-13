@@ -1,20 +1,16 @@
 package tech.chenh.outlast.tunnel;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.chenh.outlast.Properties;
+import tech.chenh.outlast.Context;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -23,158 +19,107 @@ public class TunnelManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(TunnelManager.class);
 
-    private final ExecutorService writePool = Executors.newSingleThreadExecutor();
-    private final ExecutorService readPool = Executors.newSingleThreadExecutor();
-    private final ExecutorService listenerPool = Executors.newVirtualThreadPerTaskExecutor();
-
-    private final Map<String, List<String>> sendingBuffer = new ConcurrentHashMap<>();
-    private final Map<String, List<String>> receivedBuffer = new ConcurrentHashMap<>();
-    private final Map<String, Consumer<List<String>>> receiveListeners = new ConcurrentHashMap<>();
+    private final List<String> listeningChannels = new CopyOnWriteArrayList<>();
 
     private final String source;
     private final String target;
-    private final Properties properties;
-    private final TunnelRepository repository;
+    private final Context context;
     private final Consumer<String> onConnect;
 
-    public TunnelManager(String source, String target, Properties properties, TunnelRepository repository, Consumer<String> onConnect) {
+    public TunnelManager(String source, String target, Context context, Consumer<String> onConnect) {
         this.source = source;
         this.target = target;
-        this.properties = properties;
-        this.repository = repository;
+        this.context = context;
         this.onConnect = onConnect;
     }
 
     public void start() {
-        writePool.submit(() -> {
+        Thread.startVirtualThread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
-                if (MapUtils.isEmpty(sendingBuffer)) {
-                    LockSupport.parkNanos(1_000_000L);
-                    continue;
+                try {
+                    List<String> newChannels = context.getRepository().findNewChannels(listeningChannels)
+                        .stream().filter(newChannel -> !listeningChannels.contains(newChannel)).toList();
+                    for (String newChannel : newChannels) {
+                        Thread.startVirtualThread(() -> {
+                            try {
+                                onConnect.accept(newChannel);
+                            } catch (Exception e) {
+                                LOG.debug(ExceptionUtils.getStackTrace(e));
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    LOG.debug(ExceptionUtils.getStackTrace(e));
+                } finally {
+                    LockSupport.parkNanos(1000);
                 }
-                saveSending();
-            }
-        });
-
-        readPool.submit(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                readReceived();
             }
         });
     }
 
     public void send(String channel, String message) {
-        sendingBuffer.computeIfAbsent(channel, newChannel -> new CopyOnWriteArrayList<>()).add(message);
+        List<TunnelData> sendingDataList = new ArrayList<>();
+        message = encrypt(message, context.getProperties().getEncryptionKey());
+        String batch = UUID.randomUUID().toString();
+        int total = (int) Math.ceil(message.length() * 1.0 / context.getProperties().getPackageSize());
+        for (int serial = 0; serial < total; serial++) {
+            sendingDataList.add(
+                new TunnelData()
+                    .setSource(source)
+                    .setTarget(target)
+                    .setChannel(channel)
+                    .setBatch(batch)
+                    .setSerial(serial)
+                    .setTotal(total)
+                    .setContent(
+                        message.substring(
+                            serial * context.getProperties().getPackageSize(),
+                            Math.min((serial + 1) * context.getProperties().getPackageSize(), message.length())
+                        )
+                    )
+            );
+        }
+        context.getRepository().saveAll(sendingDataList);
     }
 
-    public void listen(String channel, Consumer<List<String>> listener) {
-        receiveListeners.put(channel, listener);
-
-        List<String> receivedMessages = receivedBuffer.remove(channel);
-        if (CollectionUtils.isNotEmpty(receivedMessages)) {
-            listenerPool.submit(() -> receiveListeners.get(channel).accept(receivedMessages));
+    public void listen(String channel, Consumer<String> listener) {
+        if (listeningChannels.contains(channel)) {
+            return;
         }
+        listeningChannels.add(channel);
+        Thread.startVirtualThread(() -> {
+            while (!Thread.currentThread().isInterrupted() && listeningChannels.contains(channel)) {
+                try {
+                    List<TunnelData> receivedDataList = context.getRepository()
+                        .findReceivableData(source, channel, context.getProperties().getPollSize());
+                    if (CollectionUtils.isEmpty(receivedDataList)) {
+                        continue;
+                    }
+                    context.getRepository().deleteAll(receivedDataList);
+
+                    Map<String, List<TunnelData>> dataListByBatch = receivedDataList.stream()
+                        .collect(Collectors.groupingBy(TunnelData::getBatch, LinkedHashMap::new, Collectors.toList()));
+                    for (Map.Entry<String, List<TunnelData>> dataListByBatchEntry : dataListByBatch.entrySet()) {
+                        List<TunnelData> dataListOfBatch = dataListByBatchEntry.getValue();
+                        String encryptedContent = dataListOfBatch.stream()
+                            .sorted(Comparator.comparingInt(TunnelData::getSerial))
+                            .map(TunnelData::getContent)
+                            .collect(Collectors.joining(""));
+                        String decryptedContent = decrypt(encryptedContent, context.getProperties().getEncryptionKey());
+
+                        listener.accept(decryptedContent);
+                    }
+                } catch (Exception e) {
+                    LOG.debug(ExceptionUtils.getStackTrace(e));
+                } finally {
+                    LockSupport.parkNanos(1000);
+                }
+            }
+        });
     }
 
     public void remove(String channel) {
-        receiveListeners.remove(channel);
-    }
-
-    private void saveSending() {
-        try {
-            List<TunnelData> dataList = new ArrayList<>();
-            List<String> channels = new ArrayList<>(sendingBuffer.keySet());
-
-            for (String channel : channels) {
-                List<String> messages = new ArrayList<>(sendingBuffer.remove(channel));
-                for (String message : messages) {
-                    message = encrypt(message, properties.getEncryptionKey());
-                    String batch = UUID.randomUUID().toString();
-                    int total = (int) Math.ceil(message.length() * 1.0 / properties.getPackageSize());
-                    for (int j = 0; j < total; j++) {
-                        String subMessage = message.substring(j * properties.getPackageSize(), Math.min((j + 1) * properties.getPackageSize(), message.length()));
-                        dataList.add(
-                            new TunnelData()
-                                .setSource(source)
-                                .setTarget(target)
-                                .setChannel(channel)
-                                .setBatch(batch)
-                                .setSerial(j)
-                                .setTotal(total)
-                                .setContent(subMessage)
-                        );
-                    }
-                }
-            }
-            repository.saveAllAndFlush(dataList);
-        } catch (Exception e) {
-            LOG.debug(ExceptionUtils.getStackTrace(e));
-        }
-    }
-
-    private void readReceived() {
-        try {
-            List<TunnelData> dataList = repository.findByTarget(source);
-            if (CollectionUtils.isEmpty(dataList)) {
-                return;
-            }
-
-            List<String> receivedBatches = new ArrayList<>();
-            Map<String, List<String>> receivedContents = new HashMap<>();
-
-            Map<String, List<TunnelData>> dataListByChannel = dataList
-                .stream().collect(Collectors.groupingBy(TunnelData::getChannel, LinkedHashMap::new, Collectors.toList()));
-            for (Map.Entry<String, List<TunnelData>> dataListByChannelEntry : dataListByChannel.entrySet()) {
-                String channel = dataListByChannelEntry.getKey();
-                List<TunnelData> dataListOfChannel = dataListByChannelEntry.getValue();
-
-                List<String> contentsOfChannel = new ArrayList<>();
-
-                Map<String, List<TunnelData>> dataListByBatch = dataListOfChannel
-                    .stream().collect(Collectors.groupingBy(TunnelData::getBatch, LinkedHashMap::new, Collectors.toList()));
-                for (Map.Entry<String, List<TunnelData>> dataListByBatchEntry : dataListByBatch.entrySet()) {
-                    String batch = dataListByBatchEntry.getKey();
-                    List<TunnelData> dataListOfBatch = dataListByBatchEntry.getValue();
-                    if (dataListOfBatch.size() == dataListOfBatch.getFirst().getTotal()) {
-                        receivedBatches.add(batch);
-
-                        String encryptedContent = dataListOfBatch.stream().sorted(Comparator.comparingInt(TunnelData::getSerial)).map(TunnelData::getContent).collect(Collectors.joining(""));
-                        String decryptedContent = decrypt(encryptedContent, properties.getEncryptionKey());
-                        contentsOfChannel.add(decryptedContent);
-                    }
-                }
-
-                if (CollectionUtils.isNotEmpty(contentsOfChannel)) {
-                    receivedContents.computeIfAbsent(channel, newChannel -> new ArrayList<>()).addAll(contentsOfChannel);
-                }
-            }
-
-            if (CollectionUtils.isNotEmpty(receivedBatches)) {
-                repository.deleteByBatch(receivedBatches);
-            }
-
-            if (MapUtils.isNotEmpty(receivedContents)) {
-                Set<String> newChannels = new HashSet<>();
-                for (Map.Entry<String, List<String>> receivedContentsEntry : receivedContents.entrySet()) {
-                    String channel = receivedContentsEntry.getKey();
-                    List<String> contents = receivedContentsEntry.getValue();
-                    receivedBuffer.computeIfAbsent(channel, newChannel -> {
-                        newChannels.add(newChannel);
-                        return new CopyOnWriteArrayList<>();
-                    }).addAll(contents);
-                }
-                for (String channel : new ArrayList<>(receivedBuffer.keySet())) {
-                    if (receiveListeners.containsKey(channel)) {
-                        List<String> receivedMessages = new ArrayList<>(receivedBuffer.remove(channel));
-                        listenerPool.submit(() -> receiveListeners.get(channel).accept(receivedMessages));
-                    } else if (newChannels.contains(channel)) {
-                        listenerPool.submit(() -> onConnect.accept(channel));
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOG.debug(ExceptionUtils.getStackTrace(e));
-        }
+        listeningChannels.remove(channel);
     }
 
     private String encrypt(String plain, String encryptionKey) {

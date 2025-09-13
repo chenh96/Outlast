@@ -28,6 +28,9 @@ public class Properties {
     @Name("buffer-size")
     private Integer bufferSize;
 
+    @Name("poll-size")
+    private Integer pollSize;
+
     @Name("encryption-key")
     private String encryptionKey;
 
@@ -37,6 +40,7 @@ public class Properties {
             ", agent-proxy-host: " + agentProxyHost +
             ", agent-proxy-port: " + agentProxyPort +
             ", package-size: " + packageSize +
-            ", buffer-size: " + bufferSize;
+            ", buffer-size: " + bufferSize +
+            ", poll-size: " + pollSize;
     }
 }

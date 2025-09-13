@@ -3,8 +3,7 @@ package tech.chenh.outlast.core;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.chenh.outlast.Properties;
-import tech.chenh.outlast.tunnel.TunnelRepository;
+import tech.chenh.outlast.Context;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,22 +12,19 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Agent {
 
     private static final Logger LOG = LoggerFactory.getLogger(Agent.class);
 
-    private final ExecutorService clientPool = Executors.newVirtualThreadPerTaskExecutor();
     private final Map<String, Socket> clients = new ConcurrentHashMap<>();
 
     private final Connector connector;
-    private final Properties properties;
+    private final Context context;
 
-    public Agent(Properties properties, TunnelRepository repository) {
-        this.connector = new Connector("AGENT", "PROXY", properties, repository, this::onProxyConnect);
-        this.properties = properties;
+    public Agent(Context context) {
+        this.context = context;
+        this.connector = new Connector("AGENT", "PROXY", context, this::onProxyConnect);
     }
 
     public void start() {
@@ -51,7 +47,7 @@ public class Agent {
     private void readClientData(String channel, Socket client) {
         try {
             InputStream input = client.getInputStream();
-            byte[] buffer = new byte[properties.getBufferSize()];
+            byte[] buffer = new byte[context.getProperties().getBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
                 String content = Base64.getEncoder().encodeToString(Arrays.copyOf(buffer, bytesRead));
@@ -67,9 +63,9 @@ public class Agent {
         try {
             Socket client = clients.get(message.getChannel());
             if (client == null) {
-                Socket newClient = new Socket(properties.getAgentProxyHost(), properties.getAgentProxyPort());
+                Socket newClient = new Socket(context.getProperties().getAgentProxyHost(), context.getProperties().getAgentProxyPort());
                 clients.put(message.getChannel(), newClient);
-                clientPool.submit(() -> readClientData(message.getChannel(), newClient));
+                Thread.startVirtualThread(() -> readClientData(message.getChannel(), newClient));
 
                 client = newClient;
             }

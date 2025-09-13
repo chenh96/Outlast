@@ -4,9 +4,8 @@ import com.alibaba.fastjson2.JSON;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.chenh.outlast.Properties;
+import tech.chenh.outlast.Context;
 import tech.chenh.outlast.tunnel.TunnelManager;
-import tech.chenh.outlast.tunnel.TunnelRepository;
 
 import java.util.function.Consumer;
 
@@ -16,8 +15,8 @@ public class Connector {
 
     private final TunnelManager connector;
 
-    public Connector(String source, String target, Properties properties, TunnelRepository repository, Consumer<String> onConnect) {
-        this.connector = new TunnelManager(source, target, properties, repository, onConnect);
+    public Connector(String source, String target, Context context, Consumer<String> onConnect) {
+        this.connector = new TunnelManager(source, target, context, onConnect);
     }
 
     public void start() {
@@ -29,13 +28,11 @@ public class Connector {
     }
 
     public void listen(String channel, Consumer<Message> consumer) {
-        connector.listen(channel, messages -> {
-            for (String message : messages) {
-                try {
-                    consumer.accept(JSON.parseObject(message, Message.class));
-                } catch (Exception e) {
-                    LOG.debug(ExceptionUtils.getStackTrace(e));
-                }
+        connector.listen(channel, message -> {
+            try {
+                consumer.accept(JSON.parseObject(message, Message.class));
+            } catch (Exception e) {
+                LOG.debug(ExceptionUtils.getStackTrace(e));
             }
         });
     }

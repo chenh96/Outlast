@@ -3,8 +3,7 @@ package tech.chenh.outlast.core;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.chenh.outlast.Properties;
-import tech.chenh.outlast.tunnel.TunnelRepository;
+import tech.chenh.outlast.Context;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,36 +15,32 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Proxy {
 
     private static final Logger LOG = LoggerFactory.getLogger(Proxy.class);
 
-    private final ExecutorService serverPool = Executors.newSingleThreadExecutor();
-    private final ExecutorService clientPool = Executors.newVirtualThreadPerTaskExecutor();
     private final Map<String, Socket> clients = new ConcurrentHashMap<>();
 
     private final Connector connector;
-    private final Properties properties;
+    private final Context context;
 
     private ServerSocket server;
 
-    public Proxy(Properties properties, TunnelRepository repository) {
-        this.connector = new Connector("PROXY", "AGENT", properties, repository, this::onAgentConnect);
-        this.properties = properties;
+    public Proxy(Context context) {
+        this.context = context;
+        this.connector = new Connector("PROXY", "AGENT", context, this::onAgentConnect);
     }
 
     public void start() throws IOException {
         connector.start();
 
-        server = new ServerSocket(properties.getProxyPort());
-        serverPool.submit(() -> {
+        server = new ServerSocket(context.getProperties().getProxyPort());
+        Thread.startVirtualThread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Socket client = server.accept();
-                    clientPool.submit(() -> readClientData(client));
+                    Thread.startVirtualThread(() -> readClientData(client));
                 } catch (Exception e) {
                     LOG.debug(ExceptionUtils.getStackTrace(e));
                 }
@@ -59,7 +54,7 @@ public class Proxy {
 
         try {
             InputStream input = client.getInputStream();
-            byte[] buffer = new byte[properties.getBufferSize()];
+            byte[] buffer = new byte[context.getProperties().getBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
                 String content = Base64.getEncoder().encodeToString(Arrays.copyOf(buffer, bytesRead));

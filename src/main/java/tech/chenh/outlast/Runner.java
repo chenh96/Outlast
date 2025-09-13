@@ -18,30 +18,28 @@ public class Runner implements ApplicationRunner {
 
     private static final Logger LOG = LoggerFactory.getLogger(Runner.class);
 
-    private final Properties properties;
-    private final TunnelRepository repository;
+    private final Context context;
 
     @Autowired
     public Runner(Properties properties, TunnelRepository repository) {
-        this.properties = properties;
-        this.repository = repository;
+        this.context = new Context(properties, repository);
     }
 
     @Override
     public void run(ApplicationArguments args) throws InterruptedException, IOException {
-        switch (properties.getMode()) {
+        switch (context.getProperties().getMode()) {
             case "proxy":
-                new Proxy(properties, repository).start();
-                LOG.info("Running as proxy -> {}", properties.display());
+                new Proxy(context).start();
+                LOG.info("Running as proxy -> {}", context.getProperties().display());
                 break;
             case "agent":
-                new Agent(properties, repository).start();
-                LOG.info("Running as agent -> {}", properties.display());
+                new Agent(context).start();
+                LOG.info("Running as agent -> {}", context.getProperties().display());
                 break;
             case "test":
-                new Proxy(properties, repository).start();
-                new Agent(properties, repository).start();
-                LOG.info("Running as test -> {}", properties.display());
+                new Proxy(context).start();
+                new Agent(context).start();
+                LOG.info("Running as test -> {}", context.getProperties().display());
                 break;
         }
         new CountDownLatch(1).await();
