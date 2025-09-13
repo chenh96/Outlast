@@ -19,6 +19,6 @@ public interface TunnelRepository extends JpaRepository<TunnelData, Long> {
     @Transactional
     @Modifying
     @Query("DELETE FROM TunnelData WHERE batch IN :batches")
-    void delete(@Param("batches") Collection<String> batches);
+    void deleteByBatch(@Param("batches") Collection<String> batches);
 
 }
