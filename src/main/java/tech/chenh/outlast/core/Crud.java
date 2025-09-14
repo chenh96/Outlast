@@ -1,6 +1,7 @@
 package tech.chenh.outlast.core;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,5 +32,8 @@ public interface Crud extends JpaRepository<Data, Long> {
         AND channel NOT IN :existedChannels
         """)
     List<String> findNewChannels(@Param("target") String target, @Param("existedChannels") Iterable<String> existedChannels);
+
+    @Modifying
+    void deleteAllBySource(String source);
 
 }
