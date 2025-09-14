@@ -14,33 +14,37 @@ public class Properties {
     private String mode;
 
     @Name("proxy-port")
-    private Integer proxyPort;
+    private int proxyPort;
 
     @Name("agent-proxy-host")
     private String agentProxyHost;
 
     @Name("agent-proxy-port")
-    private Integer agentProxyPort;
+    private int agentProxyPort;
 
-    @Name("package-size")
-    private Integer packageSize;
+    @Name("data-size")
+    private int dataSize;
 
-    @Name("buffer-size")
-    private Integer bufferSize;
-
-    @Name("poll-size")
-    private Integer pollSize;
+    @Name("batch-size")
+    private int batchSize;
 
     @Name("encryption-key")
     private String encryptionKey;
+
+    public int getEncryptableDataSize() {
+        return dataSize / 4 * 3 - 1;
+    }
+
+    public int getSocketBufferSize() {
+        return getEncryptableDataSize() * batchSize;
+    }
 
     public String display() {
         return "mode: " + mode +
             ", proxy-port: " + proxyPort +
             ", agent-proxy-host: " + agentProxyHost +
             ", agent-proxy-port: " + agentProxyPort +
-            ", package-size: " + packageSize +
-            ", buffer-size: " + bufferSize +
-            ", poll-size: " + pollSize;
+            ", data-size: " + dataSize +
+            ", batch-size: " + batchSize;
     }
 }

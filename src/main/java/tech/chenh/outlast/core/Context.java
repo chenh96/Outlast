@@ -1,11 +1,12 @@
-package tech.chenh.outlast;
+package tech.chenh.outlast.core;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import tech.chenh.outlast.tunnel.TunnelRepository;
+import org.springframework.transaction.support.TransactionTemplate;
+import tech.chenh.outlast.Properties;
 
 @Getter
 @Setter
@@ -16,6 +17,8 @@ public class Context {
 
     private Properties properties;
 
-    private TunnelRepository repository;
+    private Crud crud;
+
+    private TransactionTemplate transaction;
 
 }

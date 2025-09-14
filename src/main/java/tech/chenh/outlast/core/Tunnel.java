@@ -1,0 +1,163 @@
+package tech.chenh.outlast.core;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+public class Tunnel {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Tunnel.class);
+
+    private final List<String> listening = new CopyOnWriteArrayList<>();
+
+    private final String source;
+    private final String target;
+    private final Context context;
+    private final Consumer<String> onConnect;
+
+    public Tunnel(String source, String target, Context context, Consumer<String> onConnect) {
+        this.source = source;
+        this.target = target;
+        this.context = context;
+        this.onConnect = onConnect;
+    }
+
+    public void start() {
+        Thread.startVirtualThread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    List<String> channels = context.getCrud().findNewChannels(source, new ArrayList<>(listening));
+                    for (String channel : channels) {
+                        if (listening.contains(channel)) {
+                            continue;
+                        }
+                        Thread.startVirtualThread(() -> {
+                            try {
+                                onConnect.accept(channel);
+                            } catch (Exception e) {
+                                LOG.debug(ExceptionUtils.getStackTrace(e));
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    LOG.debug(ExceptionUtils.getStackTrace(e));
+                } finally {
+                    LockSupport.parkNanos(1_000_000);
+                }
+            }
+        });
+    }
+
+    public void sendData(String channel, byte[] content) {
+        send(channel, Data.Type.DATA, content);
+    }
+
+    public void sendClose(String channel) {
+        send(channel, Data.Type.CLOSE, new byte[0]);
+    }
+
+    private void send(String channel, Data.Type type, byte[] content) {
+        List<Data> dataList = splitPacks(channel, type, content);
+        context.getTransaction().executeWithoutResult(status ->
+            context.getCrud().saveAllAndFlush(dataList)
+        );
+    }
+
+    private List<Data> splitPacks(String channel, Data.Type type, byte[] content) {
+        List<Data> dataList = new ArrayList<>();
+        int packSize = context.getProperties().getEncryptableDataSize();
+        int total = (int) Math.ceil(content.length * 1.0 / packSize);
+        for (int i = 0; i < total; i++) {
+            byte[] pack = ArrayUtils.subarray(content, i * packSize, Math.min((i + 1) * packSize, content.length));
+            String encrypted = encrypt(pack, context.getProperties().getEncryptionKey());
+            dataList.add(
+                new Data()
+                    .setSource(source)
+                    .setTarget(target)
+                    .setChannel(channel)
+                    .setType(type)
+                    .setContent(encrypted)
+            );
+        }
+        return dataList;
+    }
+
+    public synchronized void listen(String channel, BiConsumer<Data.Type, byte[]> listener) {
+        if (listening.contains(channel)) {
+            return;
+        }
+        listening.add(channel);
+        Thread.startVirtualThread(() -> {
+            while (!Thread.currentThread().isInterrupted() && listening.contains(channel)) {
+                try {
+                    List<Data> dataList = popReceivable(channel);
+                    for (Data data : dataList) {
+                        if (!listening.contains(channel)) {
+                            break;
+                        }
+
+                        String pack = data.getContent();
+                        byte[] decrypted = decrypt(pack, context.getProperties().getEncryptionKey());
+                        listener.accept(data.getType(), decrypted);
+                    }
+                } catch (Exception e) {
+                    LOG.debug(ExceptionUtils.getStackTrace(e));
+                } finally {
+                    LockSupport.parkNanos(1_000_000);
+                }
+            }
+        });
+    }
+
+    private List<Data> popReceivable(String channel) {
+        return context.getTransaction().execute(status -> {
+            List<Data> dataList = context.getCrud()
+                .findReceivableData(source, channel, context.getProperties().getBatchSize());
+            if (CollectionUtils.isNotEmpty(dataList) && listening.contains(channel)) {
+                context.getCrud().deleteAllInBatch(dataList);
+            }
+            return dataList;
+        });
+    }
+
+    public void remove(String channel) {
+        listening.remove(channel);
+    }
+
+    private String encrypt(byte[] content, String encryptionKey) {
+        try {
+            SecretKeySpec sk = new SecretKeySpec(encryptionKey.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, sk);
+            byte[] bytes = cipher.doFinal(content);
+            return Base64.getEncoder().encodeToString(bytes);
+        } catch (Exception e) {
+            return new String(content, StandardCharsets.UTF_8);
+        }
+    }
+
+    private byte[] decrypt(String content, String decryptionKey) {
+        try {
+            SecretKeySpec sk = new SecretKeySpec(decryptionKey.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, sk);
+            return cipher.doFinal(Base64.getDecoder().decode(content));
+        } catch (Exception e) {
+            return content.getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+}

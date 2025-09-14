@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 import tech.chenh.outlast.core.Agent;
+import tech.chenh.outlast.core.Context;
 import tech.chenh.outlast.core.Proxy;
-import tech.chenh.outlast.tunnel.TunnelRepository;
+import tech.chenh.outlast.core.Crud;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -21,8 +23,8 @@ public class Runner implements ApplicationRunner {
     private final Context context;
 
     @Autowired
-    public Runner(Properties properties, TunnelRepository repository) {
-        this.context = new Context(properties, repository);
+    public Runner(Properties properties, Crud crud, TransactionTemplate transaction) {
+        this.context = new Context(properties, crud, transaction);
     }
 
     @Override
