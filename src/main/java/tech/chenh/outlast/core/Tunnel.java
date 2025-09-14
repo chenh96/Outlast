@@ -36,8 +36,8 @@ public class Tunnel {
     }
 
     public void start() {
-        context.getTransaction().executeWithoutResult(status ->
-            context.getCrud().deleteAllBySource(source)
+        context.getTransaction().execute(status ->
+            context.getCrud().deleteByRole(source)
         );
 
         Thread.startVirtualThread(() -> {

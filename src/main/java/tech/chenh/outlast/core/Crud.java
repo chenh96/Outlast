@@ -34,6 +34,11 @@ public interface Crud extends JpaRepository<Data, Long> {
     List<String> findNewChannels(@Param("target") String target, @Param("existedChannels") Iterable<String> existedChannels);
 
     @Modifying
-    void deleteAllBySource(String source);
+    @Query("""
+        DELETE FROM Data
+        WHERE source = :role
+        OR target = :role
+        """)
+    int deleteByRole(@Param("role") String role);
 
 }
