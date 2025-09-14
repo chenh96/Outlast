@@ -28,6 +28,15 @@ public class Properties {
     @Name("batch-size")
     private int batchSize;
 
+    @Name("idle-timeout")
+    private int idleTimeout;
+
+    @Name("park-maximum")
+    private int parkMaximum;
+
+    @Name("park-multiplier")
+    private double parkMultiplier;
+
     @Name("encryption-key")
     private String encryptionKey;
 
@@ -45,6 +54,9 @@ public class Properties {
             ", agent-proxy-host: " + agentProxyHost +
             ", agent-proxy-port: " + agentProxyPort +
             ", data-size: " + dataSize +
-            ", batch-size: " + batchSize;
+            ", batch-size: " + batchSize +
+            ", idle-timeout: " + idleTimeout +
+            ", park-max: " + parkMaximum +
+            ", park-increment: " + parkMultiplier;
     }
 }

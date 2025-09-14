@@ -6,14 +6,9 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -41,9 +36,11 @@ public class Tunnel {
         );
 
         Thread.startVirtualThread(() -> {
+            Parker parker = new Parker(context.getProperties().getParkMaximum(), context.getProperties().getParkMultiplier());
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     List<String> channels = context.getCrud().findNewChannels(source, new ArrayList<>(listening));
+                    parker.increaseIfAbsent(CollectionUtils.isEmpty(channels));
                     for (String channel : channels) {
                         if (listening.contains(channel)) {
                             continue;
@@ -59,7 +56,7 @@ public class Tunnel {
                 } catch (Exception e) {
                     LOG.debug(ExceptionUtils.getStackTrace(e));
                 } finally {
-                    LockSupport.parkNanos(1_000_000);
+                    parker.park();
                 }
             }
         });
@@ -86,7 +83,7 @@ public class Tunnel {
         int total = (int) Math.ceil(content.length * 1.0 / packSize);
         for (int i = 0; i < total; i++) {
             byte[] pack = ArrayUtils.subarray(content, i * packSize, Math.min((i + 1) * packSize, content.length));
-            String encrypted = encrypt(pack, context.getProperties().getEncryptionKey());
+            String encrypted = Encryption.encrypt(pack, context.getProperties().getEncryptionKey());
             dataList.add(
                 new Data()
                     .setSource(source)
@@ -105,22 +102,30 @@ public class Tunnel {
         }
         listening.add(channel);
         Thread.startVirtualThread(() -> {
+            Parker parker = new Parker(context.getProperties().getParkMaximum(), context.getProperties().getParkMultiplier());
+            long lastReceived = System.currentTimeMillis();
             while (!Thread.currentThread().isInterrupted() && listening.contains(channel)) {
                 try {
                     List<Data> dataList = popReceivable(channel);
+                    parker.increaseIfAbsent(CollectionUtils.isEmpty(dataList));
                     for (Data data : dataList) {
                         if (!listening.contains(channel)) {
                             break;
                         }
 
                         String pack = data.getContent();
-                        byte[] decrypted = decrypt(pack, context.getProperties().getEncryptionKey());
+                        byte[] decrypted = Encryption.decrypt(pack, context.getProperties().getEncryptionKey());
                         listener.accept(data.getType(), decrypted);
+
+                        lastReceived = System.currentTimeMillis();
                     }
                 } catch (Exception e) {
                     LOG.debug(ExceptionUtils.getStackTrace(e));
                 } finally {
-                    LockSupport.parkNanos(1_000_000);
+                    parker.park();
+                }
+                if (System.currentTimeMillis() - lastReceived > context.getProperties().getIdleTimeout()) {
+                    remove(channel);
                 }
             }
         });
@@ -139,29 +144,6 @@ public class Tunnel {
 
     public void remove(String channel) {
         listening.remove(channel);
-    }
-
-    private String encrypt(byte[] content, String encryptionKey) {
-        try {
-            SecretKeySpec sk = new SecretKeySpec(encryptionKey.getBytes(), "AES");
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, sk);
-            byte[] bytes = cipher.doFinal(content);
-            return Base64.getEncoder().encodeToString(bytes);
-        } catch (Exception e) {
-            return new String(content, StandardCharsets.UTF_8);
-        }
-    }
-
-    private byte[] decrypt(String content, String decryptionKey) {
-        try {
-            SecretKeySpec sk = new SecretKeySpec(decryptionKey.getBytes(), "AES");
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, sk);
-            return cipher.doFinal(Base64.getDecoder().decode(content));
-        } catch (Exception e) {
-            return content.getBytes(StandardCharsets.UTF_8);
-        }
     }
 
 }
