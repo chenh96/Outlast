@@ -1,4 +1,4 @@
-package tech.chenh.outlast.core;
+package tech.chenh.outlast.start;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.springframework.transaction.support.TransactionTemplate;
-import tech.chenh.outlast.Properties;
+import tech.chenh.outlast.data.Crud;
 
 @Getter
 @Setter

@@ -1,4 +1,4 @@
-package tech.chenh.outlast;
+package tech.chenh.outlast.start;
 
 import lombok.Getter;
 import lombok.Setter;

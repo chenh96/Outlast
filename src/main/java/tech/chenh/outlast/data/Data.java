@@ -1,4 +1,4 @@
-package tech.chenh.outlast.core;
+package tech.chenh.outlast.data;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

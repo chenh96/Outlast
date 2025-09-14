@@ -1,4 +1,4 @@
-package tech.chenh.outlast;
+package tech.chenh.outlast.start;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,9 +8,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 import tech.chenh.outlast.core.Agent;
-import tech.chenh.outlast.core.Context;
 import tech.chenh.outlast.core.Proxy;
-import tech.chenh.outlast.core.Crud;
+import tech.chenh.outlast.data.Crud;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;

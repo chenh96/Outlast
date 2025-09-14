@@ -1,4 +1,4 @@
-package tech.chenh.outlast.core;
+package tech.chenh.outlast.data;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -15,7 +15,7 @@ public interface Crud extends JpaRepository<Data, Long> {
         FROM Data
         WHERE target = :target
         AND channel = :channel
-        AND (type != tech.chenh.outlast.core.Data.Type.DATA OR content IS NOT NULL)
+        AND (type != tech.chenh.outlast.data.Data.Type.DATA OR content IS NOT NULL)
         ORDER BY id ASC
         LIMIT :limit
         """)
