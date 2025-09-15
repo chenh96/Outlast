@@ -1,8 +1,7 @@
-package tech.chenh.outlast.core;
+package tech.chenh.outlast;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.chenh.outlast.start.Context;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,20 +19,18 @@ public class Proxy {
 
     private final Map<String, Socket> clients = new ConcurrentHashMap<>();
 
-    private final Context context;
     private final Tunnel tunnel;
 
     private ServerSocket server;
 
-    public Proxy(Context context) {
-        this.context = context;
-        this.tunnel = new Tunnel("PROXY", "AGENT", context, this::onAgentConnect);
+    public Proxy() {
+        this.tunnel = new Tunnel("PROXY", "AGENT", this::onAgentConnect);
     }
 
     public void start() throws IOException {
         tunnel.start();
 
-        server = new ServerSocket(context.getConfig().getProxyPort());
+        server = new ServerSocket(Config.getInstance().getProxyPort());
         Thread.startVirtualThread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -53,7 +50,7 @@ public class Proxy {
 
         try {
             InputStream input = client.getInputStream();
-            byte[] buffer = new byte[context.getConfig().getSocketBufferSize()];
+            byte[] buffer = new byte[Config.getInstance().getSocketBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
                 tunnel.sendData(channel, Arrays.copyOf(buffer, bytesRead));

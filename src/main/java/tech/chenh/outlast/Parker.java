@@ -1,4 +1,4 @@
-package tech.chenh.outlast.util;
+package tech.chenh.outlast;
 
 import java.util.concurrent.locks.LockSupport;
 

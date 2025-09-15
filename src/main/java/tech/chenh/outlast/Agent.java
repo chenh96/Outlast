@@ -1,8 +1,7 @@
-package tech.chenh.outlast.core;
+package tech.chenh.outlast;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.chenh.outlast.start.Context;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -17,12 +16,10 @@ public class Agent {
 
     private final Map<String, Socket> clients = new ConcurrentHashMap<>();
 
-    private final Context context;
     private final Tunnel tunnel;
 
-    public Agent(Context context) {
-        this.context = context;
-        this.tunnel = new Tunnel("AGENT", "PROXY", context, this::onProxyConnect);
+    public Agent() {
+        this.tunnel = new Tunnel("AGENT", "PROXY", this::onProxyConnect);
     }
 
     public void start() {
@@ -45,7 +42,7 @@ public class Agent {
     private void readClientData(String channel, Socket client) {
         try {
             InputStream input = client.getInputStream();
-            byte[] buffer = new byte[context.getConfig().getSocketBufferSize()];
+            byte[] buffer = new byte[Config.getInstance().getSocketBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
                 tunnel.sendData(channel, Arrays.copyOf(buffer, bytesRead));
@@ -60,7 +57,7 @@ public class Agent {
         try {
             Socket client = clients.get(channel);
             if (client == null) {
-                Socket newClient = new Socket(context.getConfig().getAgentProxyHost(), context.getConfig().getAgentProxyPort());
+                Socket newClient = new Socket(Config.getInstance().getAgentProxyHost(), Config.getInstance().getAgentProxyPort());
                 clients.put(channel, newClient);
                 Thread.startVirtualThread(() -> readClientData(channel, newClient));
 

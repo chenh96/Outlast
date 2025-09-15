@@ -1,4 +1,4 @@
-package tech.chenh.outlast.util;
+package tech.chenh.outlast;
 
 import lombok.NonNull;
 import org.slf4j.Logger;

@@ -1,9 +1,8 @@
-package tech.chenh.outlast.data;
+package tech.chenh.outlast;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.NonNull;
-import tech.chenh.outlast.start.Config;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,21 +19,21 @@ public class Repository {
 
     private final HikariDataSource dataSource;
 
-    private Repository(Config properties) {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(properties.getDatasourceUrl());
-        config.setUsername(properties.getDatasourceUsername());
-        config.setPassword(properties.getDatasourcePassword());
-        config.setDriverClassName(properties.getDatasourceDriverClassName());
-        config.setMaximumPoolSize(properties.getDatasourceMaximumPoolSize());
-        config.setMinimumIdle(properties.getDatasourceMinimumIdle());
+    private Repository(Config config) {
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl(config.getDatasourceUrl());
+        hikariConfig.setUsername(config.getDatasourceUsername());
+        hikariConfig.setPassword(config.getDatasourcePassword());
+        hikariConfig.setDriverClassName(config.getDatasourceDriverClassName());
+        hikariConfig.setMaximumPoolSize(config.getDatasourceMaximumPoolSize());
+        hikariConfig.setMinimumIdle(config.getDatasourceMinimumIdle());
 
-        dataSource = new HikariDataSource(config);
+        dataSource = new HikariDataSource(hikariConfig);
     }
 
-    public static synchronized Repository getInstance(Config properties) {
+    public static synchronized Repository getInstance() {
         if (INSTANCE == null) {
-            INSTANCE = new Repository(properties);
+            INSTANCE = new Repository(Config.getInstance());
         }
         return INSTANCE;
     }
