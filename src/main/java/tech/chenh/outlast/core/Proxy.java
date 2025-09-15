@@ -1,6 +1,5 @@
 package tech.chenh.outlast.core;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.chenh.outlast.start.Context;
@@ -34,14 +33,14 @@ public class Proxy {
     public void start() throws IOException {
         tunnel.start();
 
-        server = new ServerSocket(context.getProperties().getProxyPort());
+        server = new ServerSocket(context.getConfig().getProxyPort());
         Thread.startVirtualThread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Socket client = server.accept();
                     Thread.startVirtualThread(() -> readClientData(client));
                 } catch (Exception e) {
-                    LOG.error(ExceptionUtils.getStackTrace(e));
+                    LOG.debug(e.getMessage(), e);
                     break;
                 }
             }
@@ -54,13 +53,13 @@ public class Proxy {
 
         try {
             InputStream input = client.getInputStream();
-            byte[] buffer = new byte[context.getProperties().getSocketBufferSize()];
+            byte[] buffer = new byte[context.getConfig().getSocketBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
                 tunnel.sendData(channel, Arrays.copyOf(buffer, bytesRead));
             }
         } catch (Exception e) {
-            LOG.debug(ExceptionUtils.getStackTrace(e));
+            LOG.debug(e.getMessage(), e);
             sendAgentClose(channel);
         }
     }
@@ -89,7 +88,7 @@ public class Proxy {
             output.write(data);
             output.flush();
         } catch (Exception e) {
-            LOG.debug(ExceptionUtils.getStackTrace(e));
+            LOG.debug(e.getMessage(), e);
             sendAgentClose(channel);
         }
     }
@@ -101,7 +100,11 @@ public class Proxy {
 
     private void sendAgentClose(String channel) {
         closeSocket(clients.remove(channel));
-        tunnel.sendClose(channel);
+        try {
+            tunnel.sendClose(channel);
+        } catch (Exception e) {
+            LOG.debug(e.getMessage(), e);
+        }
         tunnel.remove(channel);
     }
 
@@ -110,7 +113,8 @@ public class Proxy {
             if (socket != null) {
                 socket.close();
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOG.debug(e.getMessage(), e);
         }
     }
 

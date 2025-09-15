@@ -5,8 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.springframework.transaction.support.TransactionTemplate;
-import tech.chenh.outlast.data.Crud;
+import tech.chenh.outlast.data.Repository;
 
 @Getter
 @Setter
@@ -15,10 +14,8 @@ import tech.chenh.outlast.data.Crud;
 @Accessors(chain = true)
 public class Context {
 
-    private Properties properties;
+    private Config config;
 
-    private Crud crud;
-
-    private TransactionTemplate transaction;
+    private Repository repository;
 
 }
