@@ -36,7 +36,7 @@ public class Tunnel {
             LOG.error(e.getMessage(), e);
         }
 
-        Thread.startVirtualThread(() -> {
+        Thread.ofPlatform().start(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Set<String> channels = Repository.instance().findNewChannels(source, new ArrayList<>(listening));
@@ -44,7 +44,7 @@ public class Tunnel {
                         if (listening.contains(channel)) {
                             continue;
                         }
-                        Thread.startVirtualThread(() -> {
+                        Thread.ofPlatform().start(() -> {
                             try {
                                 onConnect.accept(channel);
                             } catch (Exception e) {
@@ -54,8 +54,6 @@ public class Tunnel {
                     }
                 } catch (Exception e) {
                     LOG.error(e.getMessage(), e);
-                } finally {
-                    LockSupport.parkNanos(1_000_000);
                 }
             }
         });
@@ -99,8 +97,8 @@ public class Tunnel {
         }
         listening.add(channel);
 
-        Thread.startVirtualThread(() -> {
-            long lastReceived = System.currentTimeMillis();
+        Thread.ofPlatform().start(() -> {
+            long lastReceivedAt = System.currentTimeMillis();
             while (!Thread.currentThread().isInterrupted() && listening.contains(channel)) {
                 try {
                     List<Data> dataList = Repository.instance().popReceivable(source, channel, Config.instance().getBatchSize());
@@ -113,14 +111,14 @@ public class Tunnel {
                         byte[] decrypted = Encryption.decrypt(pack, Config.instance().getEncryptionKey());
                         listener.accept(data.getType(), decrypted);
 
-                        lastReceived = System.currentTimeMillis();
+                        lastReceivedAt = System.currentTimeMillis();
                     }
                 } catch (Exception e) {
                     LOG.error(e.getMessage(), e);
                 } finally {
-                    LockSupport.parkNanos(1_000_000);
+                    LockSupport.parkNanos(1000);
                 }
-                if (System.currentTimeMillis() - lastReceived > Config.instance().getIdleTimeout()) {
+                if (System.currentTimeMillis() - lastReceivedAt > Config.instance().getIdleTimeout()) {
                     remove(channel);
                 }
             }

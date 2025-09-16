@@ -31,11 +31,11 @@ public class Proxy {
         tunnel.start();
 
         server = new ServerSocket(Config.instance().getProxyPort());
-        Thread.startVirtualThread(() -> {
+        Thread.ofPlatform().start(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Socket client = server.accept();
-                    Thread.startVirtualThread(() -> readClientData(client));
+                    Thread.ofPlatform().start(() -> readClientData(client));
                 } catch (Exception e) {
                     LOG.debug(e.getMessage(), e);
                     break;

@@ -26,8 +26,8 @@ public class Repository {
         hikariConfig.setUsername(config.getDatasourceUsername());
         hikariConfig.setPassword(config.getDatasourcePassword());
         hikariConfig.setDriverClassName(config.getDatasourceDriverClassName());
-        hikariConfig.setMaximumPoolSize(config.getDatasourceMaximumPoolSize());
         hikariConfig.setMinimumIdle(config.getDatasourceMinimumIdle());
+        hikariConfig.setMaximumPoolSize(config.getDatasourceMaximumPoolSize());
 
         dataSource = new HikariDataSource(hikariConfig);
     }
