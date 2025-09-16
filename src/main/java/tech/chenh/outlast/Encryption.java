@@ -21,7 +21,7 @@ public class Encryption {
             byte[] bytes = cipher.doFinal(content);
             return Base64.getEncoder().encodeToString(bytes);
         } catch (Exception e) {
-            LOG.debug(e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             return new String(content, StandardCharsets.UTF_8);
         }
     }
@@ -33,7 +33,7 @@ public class Encryption {
             cipher.init(Cipher.DECRYPT_MODE, sk);
             return cipher.doFinal(Base64.getDecoder().decode(content));
         } catch (Exception e) {
-            LOG.debug(e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             return content.getBytes(StandardCharsets.UTF_8);
         }
     }

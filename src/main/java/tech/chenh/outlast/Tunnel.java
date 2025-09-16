@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -30,33 +31,31 @@ public class Tunnel {
 
     public void start() {
         try {
-            Repository.getInstance().deleteByRole(source);
+            Repository.instance().deleteByRole(source);
         } catch (SQLException e) {
-            LOG.debug(e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
         }
 
-        Thread.ofPlatform().start(() -> {
-            Parker parker = new Parker(Config.getInstance().getParkMaximum(), Config.getInstance().getParkMultiplier());
+        Thread.startVirtualThread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    Set<String> channels = Repository.getInstance().findNewChannels(source, new ArrayList<>(listening));
-                    parker.increaseIfAbsent(channels.isEmpty());
+                    Set<String> channels = Repository.instance().findNewChannels(source, new ArrayList<>(listening));
                     for (String channel : channels) {
                         if (listening.contains(channel)) {
                             continue;
                         }
-                        Thread.ofPlatform().start(() -> {
+                        Thread.startVirtualThread(() -> {
                             try {
                                 onConnect.accept(channel);
                             } catch (Exception e) {
-                                LOG.debug(e.getMessage(), e);
+                                LOG.error(e.getMessage(), e);
                             }
                         });
                     }
                 } catch (Exception e) {
-                    LOG.debug(e.getMessage(), e);
+                    LOG.error(e.getMessage(), e);
                 } finally {
-                    parker.park();
+                    LockSupport.parkNanos(1_000_000);
                 }
             }
         });
@@ -72,16 +71,16 @@ public class Tunnel {
 
     private void send(String channel, Data.Type type, byte[] content) throws Exception {
         List<Data> dataList = splitPacks(channel, type, content);
-        Repository.getInstance().saveAll(dataList);
+        Repository.instance().saveAll(dataList);
     }
 
     private List<Data> splitPacks(String channel, Data.Type type, byte[] content) {
         List<Data> dataList = new ArrayList<>();
-        int packSize = Config.getInstance().getEncryptableDataSize();
+        int packSize = Config.instance().getEncryptableDataSize();
         int total = (int) Math.ceil(content.length * 1.0 / packSize);
         for (int i = 0; i < total; i++) {
             byte[] pack = Arrays.copyOfRange(content, i * packSize, Math.min((i + 1) * packSize, content.length));
-            String encrypted = Encryption.encrypt(pack, Config.getInstance().getEncryptionKey());
+            String encrypted = Encryption.encrypt(pack, Config.instance().getEncryptionKey());
             dataList.add(
                 new Data()
                     .setSource(source)
@@ -100,30 +99,28 @@ public class Tunnel {
         }
         listening.add(channel);
 
-        Thread.ofPlatform().start(() -> {
-            Parker parker = new Parker(Config.getInstance().getParkMaximum(), Config.getInstance().getParkMultiplier());
+        Thread.startVirtualThread(() -> {
             long lastReceived = System.currentTimeMillis();
             while (!Thread.currentThread().isInterrupted() && listening.contains(channel)) {
                 try {
-                    List<Data> dataList = Repository.getInstance().popReceivable(source, channel, Config.getInstance().getBatchSize());
-                    parker.increaseIfAbsent(dataList.isEmpty());
+                    List<Data> dataList = Repository.instance().popReceivable(source, channel, Config.instance().getBatchSize());
                     for (Data data : dataList) {
                         if (!listening.contains(channel)) {
                             break;
                         }
 
                         String pack = data.getContent();
-                        byte[] decrypted = Encryption.decrypt(pack, Config.getInstance().getEncryptionKey());
+                        byte[] decrypted = Encryption.decrypt(pack, Config.instance().getEncryptionKey());
                         listener.accept(data.getType(), decrypted);
 
                         lastReceived = System.currentTimeMillis();
                     }
                 } catch (Exception e) {
-                    LOG.debug(e.getMessage(), e);
+                    LOG.error(e.getMessage(), e);
                 } finally {
-                    parker.park();
+                    LockSupport.parkNanos(1_000_000);
                 }
-                if (System.currentTimeMillis() - lastReceived > Config.getInstance().getIdleTimeout()) {
+                if (System.currentTimeMillis() - lastReceived > Config.instance().getIdleTimeout()) {
                     remove(channel);
                 }
             }

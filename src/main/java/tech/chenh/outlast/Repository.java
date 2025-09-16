@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Repository {
 
@@ -31,9 +32,9 @@ public class Repository {
         dataSource = new HikariDataSource(hikariConfig);
     }
 
-    public static synchronized Repository getInstance() {
+    public static synchronized Repository instance() {
         if (INSTANCE == null) {
-            INSTANCE = new Repository(Config.getInstance());
+            INSTANCE = new Repository(Config.instance());
         }
         return INSTANCE;
     }
@@ -122,7 +123,8 @@ public class Repository {
             WHERE TARGET = ?
             """;
         if (!existedChannels.isEmpty()) {
-            sql += " AND CHANNEL NOT IN (" + String.join(", ", "?".repeat(existedChannels.size())) + ")";
+            sql += " AND CHANNEL NOT IN "
+                + "?".repeat(existedChannels.size()).chars().mapToObj(c -> "?").collect(Collectors.joining(", ", "(", ")"));
         }
         try (
             Connection connection = dataSource.getConnection();

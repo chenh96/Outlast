@@ -1,24 +1,29 @@
 package tech.chenh.outlast;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.CountDownLatch;
 
 public class Application {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
+
     public static void main(String[] args) throws Exception {
-        Config config = Config.getInstance();
+        Config config = Config.instance();
         switch (config.getMode()) {
             case "proxy":
                 new Proxy().start();
-                System.out.println("Running as proxy -> " + config.display());
+                LOG.info("Running as proxy -> {}", config.display());
                 break;
             case "agent":
                 new Agent().start();
-                System.out.println("Running as agent -> " + config.display());
+                LOG.info("Running as agent -> {}", config.display());
                 break;
             case "test":
                 new Proxy().start();
                 new Agent().start();
-                System.out.println("Running as test -> " + config.display());
+                LOG.info("Running as test -> {}", config.display());
                 break;
         }
 

@@ -42,7 +42,7 @@ public class Agent {
     private void readClientData(String channel, Socket client) {
         try {
             InputStream input = client.getInputStream();
-            byte[] buffer = new byte[Config.getInstance().getSocketBufferSize()];
+            byte[] buffer = new byte[Config.instance().getSocketBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
                 tunnel.sendData(channel, Arrays.copyOf(buffer, bytesRead));
@@ -57,9 +57,9 @@ public class Agent {
         try {
             Socket client = clients.get(channel);
             if (client == null) {
-                Socket newClient = new Socket(Config.getInstance().getAgentProxyHost(), Config.getInstance().getAgentProxyPort());
+                Socket newClient = new Socket(Config.instance().getAgentProxyHost(), Config.instance().getAgentProxyPort());
                 clients.put(channel, newClient);
-                Thread.ofPlatform().start(() -> readClientData(channel, newClient));
+                Thread.startVirtualThread(() -> readClientData(channel, newClient));
 
                 client = newClient;
             }

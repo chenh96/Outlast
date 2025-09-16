@@ -30,12 +30,12 @@ public class Proxy {
     public void start() throws IOException {
         tunnel.start();
 
-        server = new ServerSocket(Config.getInstance().getProxyPort());
-        Thread.ofPlatform().start(() -> {
+        server = new ServerSocket(Config.instance().getProxyPort());
+        Thread.startVirtualThread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Socket client = server.accept();
-                    Thread.ofPlatform().start(() -> readClientData(client));
+                    Thread.startVirtualThread(() -> readClientData(client));
                 } catch (Exception e) {
                     LOG.debug(e.getMessage(), e);
                     break;
@@ -50,7 +50,7 @@ public class Proxy {
 
         try {
             InputStream input = client.getInputStream();
-            byte[] buffer = new byte[Config.getInstance().getSocketBufferSize()];
+            byte[] buffer = new byte[Config.instance().getSocketBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
                 tunnel.sendData(channel, Arrays.copyOf(buffer, bytesRead));

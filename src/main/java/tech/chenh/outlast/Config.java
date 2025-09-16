@@ -56,7 +56,7 @@ public class Config {
         INSTANCE = this;
     }
 
-    public static synchronized Config getInstance() {
+    public static synchronized Config instance() {
         if (INSTANCE == null) {
             try {
                 INSTANCE = new Config();
