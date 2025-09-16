@@ -35,7 +35,7 @@ public class Tunnel {
             LOG.debug(e.getMessage(), e);
         }
 
-        Thread.startVirtualThread(() -> {
+        Thread.ofPlatform().start(() -> {
             Parker parker = new Parker(Config.getInstance().getParkMaximum(), Config.getInstance().getParkMultiplier());
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -45,7 +45,7 @@ public class Tunnel {
                         if (listening.contains(channel)) {
                             continue;
                         }
-                        Thread.startVirtualThread(() -> {
+                        Thread.ofPlatform().start(() -> {
                             try {
                                 onConnect.accept(channel);
                             } catch (Exception e) {
@@ -100,7 +100,7 @@ public class Tunnel {
         }
         listening.add(channel);
 
-        Thread.startVirtualThread(() -> {
+        Thread.ofPlatform().start(() -> {
             Parker parker = new Parker(Config.getInstance().getParkMaximum(), Config.getInstance().getParkMultiplier());
             long lastReceived = System.currentTimeMillis();
             while (!Thread.currentThread().isInterrupted() && listening.contains(channel)) {
