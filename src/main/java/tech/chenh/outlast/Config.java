@@ -25,8 +25,6 @@ public class Config {
     private final int dataSize;
     private final int batchSize;
     private final int idleTimeout;
-    private final int parkMaximum;
-    private final double parkMultiplier;
     private final String encryptionKey;
 
     private Config() throws IOException {
@@ -49,8 +47,6 @@ public class Config {
         this.dataSize = Integer.parseInt(props.getProperty("outlast.data-size"));
         this.batchSize = Integer.parseInt(props.getProperty("outlast.batch-size"));
         this.idleTimeout = Integer.parseInt(props.getProperty("outlast.idle-timeout"));
-        this.parkMaximum = Integer.parseInt(props.getProperty("outlast.park-maximum"));
-        this.parkMultiplier = Double.parseDouble(props.getProperty("outlast.park-multiplier"));
         this.encryptionKey = props.getProperty("outlast.encryption-key");
 
         INSTANCE = this;
@@ -82,9 +78,7 @@ public class Config {
             ", agent-proxy-port: " + agentProxyPort +
             ", data-size: " + dataSize +
             ", batch-size: " + batchSize +
-            ", idle-timeout: " + idleTimeout +
-            ", park-max: " + parkMaximum +
-            ", park-increment: " + parkMultiplier;
+            ", idle-timeout: " + idleTimeout;
     }
 
 }
