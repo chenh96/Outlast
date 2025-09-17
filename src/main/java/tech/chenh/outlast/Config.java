@@ -23,9 +23,19 @@ public class Config {
     private final String agentProxyHost;
     private final int agentProxyPort;
     private final int dataSize;
-    private final int batchSize;
+    private final int readBatchSize;
+    private final int writeBatchSize;
+    private final int ioInterval;
     private final int idleTimeout;
     private final String encryptionKey;
+
+    public int getEncryptableDataSize() {
+        return dataSize / 4 * 3 - 1;
+    }
+
+    public int getSocketBufferSize() {
+        return getEncryptableDataSize() * writeBatchSize;
+    }
 
     private Config() throws IOException {
         InputStream input = getClass().getClassLoader().getResourceAsStream("application.properties");
@@ -45,7 +55,9 @@ public class Config {
         this.agentProxyHost = props.getProperty("outlast.agent-proxy-host");
         this.agentProxyPort = Integer.parseInt(props.getProperty("outlast.agent-proxy-port"));
         this.dataSize = Integer.parseInt(props.getProperty("outlast.data-size"));
-        this.batchSize = Integer.parseInt(props.getProperty("outlast.batch-size"));
+        this.readBatchSize = Integer.parseInt(props.getProperty("outlast.read-batch-size"));
+        this.writeBatchSize = Integer.parseInt(props.getProperty("outlast.write-batch-size"));
+        this.ioInterval = Integer.parseInt(props.getProperty("outlast.io-interval"));
         this.idleTimeout = Integer.parseInt(props.getProperty("outlast.idle-timeout"));
         this.encryptionKey = props.getProperty("outlast.encryption-key");
 
@@ -61,24 +73,6 @@ public class Config {
             }
         }
         return INSTANCE;
-    }
-
-    public int getEncryptableDataSize() {
-        return dataSize / 4 * 3 - 1;
-    }
-
-    public int getSocketBufferSize() {
-        return getEncryptableDataSize() * batchSize;
-    }
-
-    public String display() {
-        return "mode: " + mode +
-            ", proxy-port: " + proxyPort +
-            ", agent-proxy-host: " + agentProxyHost +
-            ", agent-proxy-port: " + agentProxyPort +
-            ", data-size: " + dataSize +
-            ", batch-size: " + batchSize +
-            ", idle-timeout: " + idleTimeout;
     }
 
 }

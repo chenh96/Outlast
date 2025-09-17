@@ -14,16 +14,16 @@ public class Application {
         switch (config.getMode()) {
             case "proxy":
                 new Proxy().start();
-                LOG.info("Running as proxy -> {}", config.display());
+                LOG.info("Running as proxy...");
                 break;
             case "agent":
                 new Agent().start();
-                LOG.info("Running as agent -> {}", config.display());
+                LOG.info("Running as agent...");
                 break;
             case "test":
                 new Proxy().start();
                 new Agent().start();
-                LOG.info("Running as test -> {}", config.display());
+                LOG.info("Running as test...");
                 break;
         }
 

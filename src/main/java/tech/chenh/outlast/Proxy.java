@@ -35,7 +35,7 @@ public class Proxy {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Socket client = server.accept();
-                    Thread.ofPlatform().start(() -> readClientData(client));
+                    Thread.ofVirtual().start(() -> readClientData(client));
                 } catch (Exception e) {
                     LOG.debug(e.getMessage(), e);
                     break;

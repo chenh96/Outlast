@@ -59,7 +59,7 @@ public class Agent {
             if (client == null) {
                 Socket newClient = new Socket(Config.instance().getAgentProxyHost(), Config.instance().getAgentProxyPort());
                 clients.put(channel, newClient);
-                Thread.ofPlatform().start(() -> readClientData(channel, newClient));
+                Thread.ofVirtual().start(() -> readClientData(channel, newClient));
 
                 client = newClient;
             }
