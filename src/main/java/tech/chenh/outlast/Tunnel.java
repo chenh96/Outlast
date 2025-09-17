@@ -54,6 +54,8 @@ public class Tunnel {
                     }
                 } catch (Exception e) {
                     LOG.error(e.getMessage(), e);
+                } finally {
+                    LockSupport.parkNanos(1_000_000);
                 }
             }
         });
@@ -116,7 +118,7 @@ public class Tunnel {
                 } catch (Exception e) {
                     LOG.error(e.getMessage(), e);
                 } finally {
-                    LockSupport.parkNanos(1000);
+                    LockSupport.parkNanos(1_000_000);
                 }
                 if (System.currentTimeMillis() - lastReceivedAt > Config.instance().getIdleTimeout()) {
                     remove(channel);
