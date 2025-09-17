@@ -65,55 +65,52 @@ public class Repository {
     }
 
     public @NonNull List<Data> popReceivable(@NonNull String target, @NonNull String channel, int limit) throws SQLException {
-        String querySql = """
-            SELECT ID, SOURCE, TARGET, CHANNEL, TYPE, CONTENT
-            FROM OUTLAST_DATA
-            WHERE TARGET = ? AND CHANNEL = ?
-            AND (TYPE != 'DATA' OR CONTENT IS NOT NULL)
-            ORDER BY ID ASC
-            LIMIT ?
-            """;
-        List<Data> dataList = new ArrayList<>();
-        try (
-            Connection connection = dataSource.getConnection();
-            PreparedStatement statement = connection.prepareStatement(querySql)
-        ) {
-            statement.setString(1, target);
-            statement.setString(2, channel);
-            statement.setInt(3, limit);
+        try (Connection connection = dataSource.getConnection()) {
+            List<Data> dataList = new ArrayList<>();
 
-            try (ResultSet result = statement.executeQuery()) {
-                while (result.next()) {
-                    Data data = new Data()
-                        .setId(result.getLong("ID"))
-                        .setSource(result.getString("SOURCE"))
-                        .setTarget(result.getString("TARGET"))
-                        .setChannel(result.getString("CHANNEL"))
-                        .setType(Data.Type.valueOf(result.getString("TYPE")))
-                        .setContent(result.getString("CONTENT"));
-                    dataList.add(data);
+            String querySql = """
+                SELECT ID, SOURCE, TARGET, CHANNEL, TYPE, CONTENT
+                FROM OUTLAST_DATA
+                WHERE TARGET = ? AND CHANNEL = ?
+                AND (TYPE != 'DATA' OR CONTENT IS NOT NULL)
+                ORDER BY ID ASC
+                LIMIT ?
+                """;
+            try (PreparedStatement statement = connection.prepareStatement(querySql)) {
+                statement.setString(1, target);
+                statement.setString(2, channel);
+                statement.setInt(3, limit);
+
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        Data data = new Data()
+                            .setId(result.getLong("ID"))
+                            .setSource(result.getString("SOURCE"))
+                            .setTarget(result.getString("TARGET"))
+                            .setChannel(result.getString("CHANNEL"))
+                            .setType(Data.Type.valueOf(result.getString("TYPE")))
+                            .setContent(result.getString("CONTENT"));
+                        dataList.add(data);
+                    }
                 }
             }
-        }
-        if (dataList.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        String deleteSql = """
-            DELETE FROM OUTLAST_DATA WHERE ID = ?
-            """;
-        try (
-            Connection connection = dataSource.getConnection();
-            PreparedStatement statement = connection.prepareStatement(deleteSql)
-        ) {
-            for (Data data : dataList) {
-                statement.setLong(1, data.getId());
-                statement.addBatch();
+            if (dataList.isEmpty()) {
+                return new ArrayList<>();
             }
-            statement.executeBatch();
-        }
 
-        return dataList;
+            String deleteSql = """
+                DELETE FROM OUTLAST_DATA WHERE ID = ?
+                """;
+            try (PreparedStatement statement = connection.prepareStatement(deleteSql)) {
+                for (Data data : dataList) {
+                    statement.setLong(1, data.getId());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
+
+            return dataList;
+        }
     }
 
     public @NonNull Set<String> findNewChannels(@NonNull String target, @NonNull List<String> existedChannels) throws SQLException {
