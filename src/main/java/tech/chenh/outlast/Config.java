@@ -14,9 +14,8 @@ public class Config {
     private final String datasourceUrl;
     private final String datasourceUsername;
     private final String datasourcePassword;
-    private final String datasourceDriverClassName;
-    private final int datasourceMinimumIdle;
-    private final int datasourceMaximumPoolSize;
+    private final String datasourceDriverClass;
+    private final int datasourceMaxPoolSize;
 
     private final String mode;
     private final int proxyPort;
@@ -46,9 +45,8 @@ public class Config {
         this.datasourceUrl = props.getProperty("datasource.url");
         this.datasourceUsername = props.getProperty("datasource.username");
         this.datasourcePassword = props.getProperty("datasource.password");
-        this.datasourceDriverClassName = props.getProperty("datasource.driver-class-name");
-        this.datasourceMinimumIdle = Integer.parseInt(props.getProperty("datasource.hikari.minimum-idle"));
-        this.datasourceMaximumPoolSize = Integer.parseInt(props.getProperty("datasource.hikari.maximum-pool-size"));
+        this.datasourceDriverClass = props.getProperty("datasource.driver-class");
+        this.datasourceMaxPoolSize = Integer.parseInt(props.getProperty("datasource.max-pool-size"));
 
         this.mode = props.getProperty("outlast.mode");
         this.proxyPort = Integer.parseInt(props.getProperty("outlast.proxy-port"));

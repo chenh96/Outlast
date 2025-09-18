@@ -21,8 +21,8 @@ public class Tunnel {
 
     private static final Logger LOG = LoggerFactory.getLogger(Tunnel.class);
 
-    private final ExecutorService readPool = Executors.newFixedThreadPool(Config.instance().getDatasourceMaximumPoolSize() / 2);
-    private final ExecutorService writePool = Executors.newFixedThreadPool(Config.instance().getDatasourceMaximumPoolSize() / 2);
+    private final ExecutorService readPool = Executors.newFixedThreadPool(Config.instance().getDatasourceMaxPoolSize() / 2);
+    private final ExecutorService writePool = Executors.newFixedThreadPool(Config.instance().getDatasourceMaxPoolSize() / 2);
 
     private final List<String> listening = new CopyOnWriteArrayList<>();
 
