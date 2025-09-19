@@ -9,11 +9,14 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Agent {
 
     private static final Logger LOG = LoggerFactory.getLogger(Agent.class);
 
+    private final ExecutorService clientPool = Executors.newCachedThreadPool();
     private final Map<String, Socket> clients = new ConcurrentHashMap<>();
 
     private final Tunnel tunnel;
@@ -59,7 +62,7 @@ public class Agent {
             if (client == null) {
                 Socket newClient = new Socket(Config.instance().getAgentProxyHost(), Config.instance().getAgentProxyPort());
                 clients.put(channel, newClient);
-                Thread.ofVirtual().start(() -> readClientData(channel, newClient));
+                clientPool.submit(() -> readClientData(channel, newClient));
 
                 client = newClient;
             }

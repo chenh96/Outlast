@@ -12,11 +12,14 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Proxy {
 
     private static final Logger LOG = LoggerFactory.getLogger(Proxy.class);
 
+    private final ExecutorService clientPool = Executors.newCachedThreadPool();
     private final Map<String, Socket> clients = new ConcurrentHashMap<>();
 
     private final Tunnel tunnel;
@@ -35,7 +38,7 @@ public class Proxy {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Socket client = server.accept();
-                    Thread.ofVirtual().start(() -> readClientData(client));
+                    clientPool.submit(() -> readClientData(client));
                 } catch (Exception e) {
                     LOG.debug(e.getMessage(), e);
                     break;

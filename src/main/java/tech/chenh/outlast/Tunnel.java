@@ -9,10 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -21,9 +19,7 @@ public class Tunnel {
 
     private static final Logger LOG = LoggerFactory.getLogger(Tunnel.class);
 
-    private final ExecutorService readPool = Executors.newFixedThreadPool(Config.instance().getDatasourceMaxPoolSize() / 2);
-    private final ExecutorService writePool = Executors.newFixedThreadPool(Config.instance().getDatasourceMaxPoolSize() / 2);
-
+    private final ExecutorService pollingPool = Executors.newCachedThreadPool();
     private final List<String> listening = new CopyOnWriteArrayList<>();
 
     private final String source;
@@ -38,23 +34,20 @@ public class Tunnel {
 
     public void start() {
         try {
-            write(repository -> repository.deleteByRole(source));
+            Repository.instance().deleteByRole(source);
         } catch (SQLException e) {
             LOG.error(e.getMessage(), e);
-        } catch (InterruptedException e) {
-            LOG.error(e.getMessage(), e);
-            return;
         }
 
         Thread.ofPlatform().start(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    Set<String> channels = read(repository -> repository.findNewChannels(source, new ArrayList<>(listening)));
+                    Set<String> channels = Repository.instance().findNewChannels(source, new ArrayList<>(listening));
                     for (String channel : channels) {
                         if (listening.contains(channel)) {
                             continue;
                         }
-                        Thread.ofVirtual().start(() -> {
+                        pollingPool.submit(() -> {
                             try {
                                 onConnect.accept(channel);
                             } catch (Exception e) {
@@ -82,7 +75,7 @@ public class Tunnel {
 
     private void send(String channel, Data.Type type, byte[] content) throws Exception {
         List<Data> dataList = splitPacks(channel, type, content);
-        write(repository -> repository.saveAll(dataList));
+        Repository.instance().saveAll(dataList);
     }
 
     private List<Data> splitPacks(String channel, Data.Type type, byte[] content) {
@@ -110,11 +103,11 @@ public class Tunnel {
         }
         listening.add(channel);
 
-        Thread.ofVirtual().start(() -> {
+        pollingPool.submit(() -> {
             long lastReceivedAt = System.currentTimeMillis();
             while (!Thread.currentThread().isInterrupted() && listening.contains(channel)) {
                 try {
-                    List<Data> dataList = read(repository -> repository.popReceivable(source, channel, Config.instance().getReadBatchSize()));
+                    List<Data> dataList = Repository.instance().popReceivable(source, channel, Config.instance().getReadBatchSize());
                     for (Data data : dataList) {
                         if (!listening.contains(channel)) {
                             break;
@@ -142,58 +135,6 @@ public class Tunnel {
 
     public void remove(String channel) {
         listening.remove(channel);
-    }
-
-    @FunctionalInterface
-    private interface ReadFunction<T> {
-
-        T call(Repository repository) throws SQLException;
-
-    }
-
-    @FunctionalInterface
-    private interface WriteFunction {
-
-        void call(Repository repository) throws SQLException;
-
-    }
-
-    private <T> T read(ReadFunction<T> function) throws SQLException, InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<T> result = new AtomicReference<>();
-        AtomicReference<SQLException> exception = new AtomicReference<>();
-        readPool.submit(() -> {
-            try {
-                result.set(function.call(Repository.instance()));
-            } catch (SQLException e) {
-                exception.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        latch.await();
-        if (exception.get() != null) {
-            throw exception.get();
-        }
-        return result.get();
-    }
-
-    private void write(WriteFunction function) throws SQLException, InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<SQLException> exception = new AtomicReference<>();
-        writePool.submit(() -> {
-            try {
-                function.call(Repository.instance());
-            } catch (SQLException e) {
-                exception.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        latch.await();
-        if (exception.get() != null) {
-            throw exception.get();
-        }
     }
 
 }

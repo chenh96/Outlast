@@ -15,6 +15,7 @@ public class Config {
     private final String datasourceUsername;
     private final String datasourcePassword;
     private final String datasourceDriverClass;
+    private final int datasourceMinPoolSize;
     private final int datasourceMaxPoolSize;
     private final int datasourceIdleTimeout;
 
@@ -48,6 +49,7 @@ public class Config {
         this.datasourceUsername = props.getProperty("datasource.username");
         this.datasourcePassword = props.getProperty("datasource.password");
         this.datasourceDriverClass = props.getProperty("datasource.driver-class");
+        this.datasourceMinPoolSize = Integer.parseInt(props.getProperty("datasource.min-pool-size"));
         this.datasourceMaxPoolSize = Integer.parseInt(props.getProperty("datasource.max-pool-size"));
         this.datasourceIdleTimeout = Integer.parseInt(props.getProperty("datasource.idle-timeout"));
 
