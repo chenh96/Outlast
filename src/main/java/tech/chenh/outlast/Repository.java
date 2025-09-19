@@ -19,6 +19,7 @@ public class Repository {
     private static Repository INSTANCE;
 
     private final HikariDataSource dataSource;
+    private final String dataTable;
 
     private Repository(Config config) {
         HikariConfig hikariConfig = new HikariConfig();
@@ -31,6 +32,8 @@ public class Repository {
         hikariConfig.setIdleTimeout(config.getDatasourceIdleTimeout());
 
         dataSource = new HikariDataSource(hikariConfig);
+
+        dataTable = config.getDataTable();
     }
 
     public static synchronized Repository instance() {
@@ -46,9 +49,9 @@ public class Repository {
         }
 
         String sql = """
-            INSERT INTO OUTLAST_DATA (ID, SOURCE, TARGET, CHANNEL, TYPE, CONTENT)
-            VALUES (SEQ_OUTLAST_DATA_ID.NEXTVAL, ?, ?, ?, ?, ?)
-            """;
+            INSERT INTO {DATA_TABLE} (ID, SOURCE, TARGET, CHANNEL, TYPE, CONTENT)
+            VALUES (SEQ_{DATA_TABLE}_ID.NEXTVAL, ?, ?, ?, ?, ?)
+            """.replace("{DATA_TABLE}", dataTable);
         try (
             Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(sql)
@@ -71,12 +74,12 @@ public class Repository {
 
             String querySql = """
                 SELECT ID, SOURCE, TARGET, CHANNEL, TYPE, CONTENT
-                FROM OUTLAST_DATA
+                FROM {DATA_TABLE}
                 WHERE TARGET = ? AND CHANNEL = ?
                 AND (TYPE != 'DATA' OR CONTENT IS NOT NULL)
                 ORDER BY ID ASC
                 LIMIT ?
-                """;
+                """.replace("{DATA_TABLE}", dataTable);
             try (PreparedStatement statement = connection.prepareStatement(querySql)) {
                 statement.setString(1, target);
                 statement.setString(2, channel);
@@ -100,8 +103,8 @@ public class Repository {
             }
 
             String deleteSql = """
-                DELETE FROM OUTLAST_DATA WHERE ID = ?
-                """;
+                DELETE FROM {DATA_TABLE} WHERE ID = ?
+                """.replace("{DATA_TABLE}", dataTable);
             try (PreparedStatement statement = connection.prepareStatement(deleteSql)) {
                 for (Data data : dataList) {
                     statement.setLong(1, data.getId());
@@ -117,9 +120,9 @@ public class Repository {
     public @NonNull Set<String> findNewChannels(@NonNull String target, @NonNull List<String> existedChannels) throws SQLException {
         String sql = """
             SELECT DISTINCT CHANNEL
-            FROM OUTLAST_DATA
+            FROM {DATA_TABLE}
             WHERE TARGET = ?
-            """;
+            """.replace("{DATA_TABLE}", dataTable);
         if (!existedChannels.isEmpty()) {
             sql += " AND CHANNEL NOT IN "
                 + "?".repeat(existedChannels.size()).chars().mapToObj(c -> "?").collect(Collectors.joining(", ", "(", ")"));
@@ -147,8 +150,8 @@ public class Repository {
 
     public void deleteByRole(@NonNull String role) throws SQLException {
         String sql = """
-            DELETE FROM OUTLAST_DATA WHERE SOURCE = ? OR TARGET = ?
-            """;
+            DELETE FROM {DATA_TABLE} WHERE SOURCE = ? OR TARGET = ?
+            """.replace("{DATA_TABLE}", dataTable);
         try (
             Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(sql)

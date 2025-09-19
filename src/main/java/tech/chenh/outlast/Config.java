@@ -28,6 +28,7 @@ public class Config {
     private final int pollingInterval;
     private final int idleTimeout;
     private final String encryptionKey;
+    private final String dataTable;
 
     public int getEncryptableDataSize() {
         return dataSize / 4 * 3 - 1;
@@ -60,6 +61,7 @@ public class Config {
         this.pollingInterval = Integer.parseInt(props.getProperty("outlast.polling-interval"));
         this.idleTimeout = Integer.parseInt(props.getProperty("outlast.idle-timeout"));
         this.encryptionKey = props.getProperty("outlast.encryption-key");
+        this.dataTable = props.getProperty("outlast.data-table");
 
         INSTANCE = this;
     }
