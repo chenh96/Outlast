@@ -16,6 +16,7 @@ public class Config {
     private final String datasourcePassword;
     private final String datasourceDriverClass;
     private final int datasourceMaxPoolSize;
+    private final int datasourceIdleTimeout;
 
     private final String mode;
     private final int proxyPort;
@@ -24,7 +25,7 @@ public class Config {
     private final int dataSize;
     private final int readBatchSize;
     private final int writeBatchSize;
-    private final int ioInterval;
+    private final int pollingInterval;
     private final int idleTimeout;
     private final String encryptionKey;
 
@@ -47,6 +48,7 @@ public class Config {
         this.datasourcePassword = props.getProperty("datasource.password");
         this.datasourceDriverClass = props.getProperty("datasource.driver-class");
         this.datasourceMaxPoolSize = Integer.parseInt(props.getProperty("datasource.max-pool-size"));
+        this.datasourceIdleTimeout = Integer.parseInt(props.getProperty("datasource.idle-timeout"));
 
         this.mode = props.getProperty("outlast.mode");
         this.proxyPort = Integer.parseInt(props.getProperty("outlast.proxy-port"));
@@ -55,7 +57,7 @@ public class Config {
         this.dataSize = Integer.parseInt(props.getProperty("outlast.data-size"));
         this.readBatchSize = Integer.parseInt(props.getProperty("outlast.read-batch-size"));
         this.writeBatchSize = Integer.parseInt(props.getProperty("outlast.write-batch-size"));
-        this.ioInterval = Integer.parseInt(props.getProperty("outlast.io-interval"));
+        this.pollingInterval = Integer.parseInt(props.getProperty("outlast.polling-interval"));
         this.idleTimeout = Integer.parseInt(props.getProperty("outlast.idle-timeout"));
         this.encryptionKey = props.getProperty("outlast.encryption-key");
 

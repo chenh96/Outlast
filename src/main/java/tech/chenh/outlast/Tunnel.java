@@ -66,7 +66,7 @@ public class Tunnel {
                     LOG.error(e.getMessage(), e);
                     return;
                 } finally {
-                    LockSupport.parkNanos(Config.instance().getIoInterval() * 1000_000L);
+                    LockSupport.parkNanos(Config.instance().getPollingInterval() * 1000_000L);
                 }
             }
         });
@@ -131,7 +131,7 @@ public class Tunnel {
                     remove(channel);
                     return;
                 } finally {
-                    LockSupport.parkNanos(Config.instance().getIoInterval() * 1000_000L);
+                    LockSupport.parkNanos(Config.instance().getPollingInterval() * 1000_000L);
                 }
                 if (System.currentTimeMillis() - lastReceivedAt > Config.instance().getIdleTimeout()) {
                     remove(channel);
