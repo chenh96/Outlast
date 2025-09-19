@@ -32,7 +32,7 @@ public class Config {
     private final String dataTable;
 
     public int getEncryptableDataSize() {
-        return dataSize / 4 * 3 - 1;
+        return dataSize / 4 * 3 - 16;
     }
 
     public int getSocketBufferSize() {
