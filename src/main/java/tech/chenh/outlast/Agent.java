@@ -43,8 +43,7 @@ public class Agent {
     }
 
     private void readClientData(String channel, Socket client) {
-        try {
-            InputStream input = client.getInputStream();
+        try (InputStream input = client.getInputStream()) {
             byte[] buffer = new byte[Config.instance().getSocketBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
@@ -52,6 +51,7 @@ public class Agent {
             }
         } catch (Exception e) {
             LOG.debug(e.getMessage(), e);
+        } finally {
             sendProxyClose(channel);
         }
     }

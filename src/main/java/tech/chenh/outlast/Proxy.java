@@ -51,8 +51,7 @@ public class Proxy {
         String channel = UUID.randomUUID().toString();
         clients.put(channel, client);
 
-        try {
-            InputStream input = client.getInputStream();
+        try (InputStream input = client.getInputStream()) {
             byte[] buffer = new byte[Config.instance().getSocketBufferSize()];
             int bytesRead;
             while (!Thread.currentThread().isInterrupted() && (bytesRead = input.read(buffer)) != -1) {
@@ -60,6 +59,7 @@ public class Proxy {
             }
         } catch (Exception e) {
             LOG.debug(e.getMessage(), e);
+        } finally {
             sendAgentClose(channel);
         }
     }
