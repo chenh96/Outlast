@@ -30,6 +30,7 @@ public class Config {
     private final int idleTimeout;
     private final String encryptionKey;
     private final String dataTable;
+    private final String dataIdSeq;
 
     public int getEncryptableDataSize() {
         return dataSize / 4 * 3 - 16;
@@ -64,6 +65,7 @@ public class Config {
         this.idleTimeout = Integer.parseInt(props.getProperty("outlast.idle-timeout"));
         this.encryptionKey = props.getProperty("outlast.encryption-key");
         this.dataTable = props.getProperty("outlast.data-table");
+        this.dataIdSeq = props.getProperty("outlast.data-id-seq");
 
         INSTANCE = this;
     }

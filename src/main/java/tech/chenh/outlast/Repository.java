@@ -20,6 +20,7 @@ public class Repository {
 
     private final HikariDataSource dataSource;
     private final String dataTable;
+    private final String dataIdSeq;
 
     private Repository(Config config) {
         HikariConfig hikariConfig = new HikariConfig();
@@ -34,6 +35,7 @@ public class Repository {
         dataSource = new HikariDataSource(hikariConfig);
 
         dataTable = config.getDataTable();
+        dataIdSeq = config.getDataIdSeq();
     }
 
     public static synchronized Repository instance() {
@@ -50,8 +52,8 @@ public class Repository {
 
         String sql = """
             INSERT INTO {DATA_TABLE} (ID, SOURCE, TARGET, CHANNEL, TYPE, CONTENT)
-            VALUES (SEQ_{DATA_TABLE}_ID.NEXTVAL, ?, ?, ?, ?, ?)
-            """.replace("{DATA_TABLE}", dataTable);
+            VALUES ({DATA_ID_SEQ}.NEXTVAL, ?, ?, ?, ?, ?)
+            """.replace("{DATA_TABLE}", dataTable).replace("{DATA_ID_SEQ}", dataIdSeq);
         try (
             Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(sql)
