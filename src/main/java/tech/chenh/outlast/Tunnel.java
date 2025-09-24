@@ -55,11 +55,10 @@ public class Tunnel {
                             }
                         });
                     }
+                    LockSupport.parkNanos(Config.instance().getPollingInterval() * 1000_000L);
                 } catch (Exception e) {
                     LOG.error(e.getMessage(), e);
                     return;
-                } finally {
-                    LockSupport.parkNanos(Config.instance().getPollingInterval() * 1000_000L);
                 }
             }
         });
@@ -119,12 +118,11 @@ public class Tunnel {
 
                         lastReceivedAt = System.currentTimeMillis();
                     }
+                    LockSupport.parkNanos(Config.instance().getPollingInterval() * 1000_000L);
                 } catch (Exception e) {
                     LOG.error(e.getMessage(), e);
                     remove(channel);
                     return;
-                } finally {
-                    LockSupport.parkNanos(Config.instance().getPollingInterval() * 1000_000L);
                 }
                 if (System.currentTimeMillis() - lastReceivedAt > Config.instance().getIdleTimeout()) {
                     remove(channel);
