@@ -1,5 +1,7 @@
 package tech.chenh.outlast;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,7 @@ public class Agent {
         tunnel.start();
     }
 
-    private void onProxyConnect(String channel) {
+    private void onProxyConnect(@NonNull String channel) {
         tunnel.listen(channel, (type, data) -> {
             switch (type) {
                 case DATA:
@@ -42,7 +44,7 @@ public class Agent {
         });
     }
 
-    private void readClientData(String channel, Socket client) {
+    private void readClientData(@NonNull String channel, @NonNull Socket client) {
         try (InputStream input = client.getInputStream()) {
             byte[] buffer = new byte[Config.instance().getSocketBufferSize()];
             int bytesRead;
@@ -56,7 +58,7 @@ public class Agent {
         }
     }
 
-    private void onProxyData(String channel, byte[] data) {
+    private void onProxyData(@NonNull String channel, byte @NonNull [] data) {
         try {
             Socket client = clients.get(channel);
             if (client == null) {
@@ -76,12 +78,12 @@ public class Agent {
         }
     }
 
-    private void onProxyClose(String channel) {
+    private void onProxyClose(@NonNull String channel) {
         closeSocket(clients.remove(channel));
         tunnel.remove(channel);
     }
 
-    private void sendProxyClose(String channel) {
+    private void sendProxyClose(@NonNull String channel) {
         closeSocket(clients.remove(channel));
         try {
             tunnel.sendClose(channel);
@@ -91,7 +93,7 @@ public class Agent {
         tunnel.remove(channel);
     }
 
-    private void closeSocket(Socket socket) {
+    private void closeSocket(@Nullable Socket socket) {
         try {
             if (socket != null) {
                 socket.close();

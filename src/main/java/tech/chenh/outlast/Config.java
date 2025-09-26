@@ -1,6 +1,7 @@
 package tech.chenh.outlast;
 
 import lombok.Getter;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,7 +73,7 @@ public class Config {
         INSTANCE = this;
     }
 
-    public static synchronized Config instance() {
+    public static synchronized @NonNull Config instance() {
         if (INSTANCE == null) {
             try {
                 INSTANCE = new Config();

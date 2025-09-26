@@ -22,7 +22,7 @@ public class Repository {
     private final String dataTable;
     private final String dataIdSeq;
 
-    private Repository(Config config) {
+    private Repository(@NonNull Config config) {
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(config.getDatasourceUrl());
         hikariConfig.setUsername(config.getDatasourceUsername());
@@ -39,14 +39,14 @@ public class Repository {
         dataIdSeq = config.getDataIdSeq();
     }
 
-    public static synchronized Repository instance() {
+    public static synchronized @NonNull Repository instance() {
         if (INSTANCE == null) {
             INSTANCE = new Repository(Config.instance());
         }
         return INSTANCE;
     }
 
-    public void saveAll(@NonNull List<Data> dataList) throws SQLException {
+    public void saveAll(@NonNull List<@NonNull Data> dataList) throws SQLException {
         if (dataList.isEmpty()) {
             return;
         }
@@ -71,7 +71,7 @@ public class Repository {
         }
     }
 
-    public @NonNull List<Data> popReceivable(@NonNull String target, @NonNull String channel, int limit) throws SQLException {
+    public @NonNull List<@NonNull Data> popReceivable(@NonNull String target, @NonNull String channel, int limit) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             List<Data> dataList = new ArrayList<>();
 
@@ -120,7 +120,7 @@ public class Repository {
         }
     }
 
-    public @NonNull Set<String> findNewChannels(@NonNull String target, @NonNull List<String> existedChannels) throws SQLException {
+    public @NonNull Set<@NonNull String> findNewChannels(@NonNull String target, @NonNull List<@NonNull String> existedChannels) throws SQLException {
         String sql = """
             SELECT DISTINCT CHANNEL
             FROM {DATA_TABLE}

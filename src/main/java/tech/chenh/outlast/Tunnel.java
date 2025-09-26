@@ -1,5 +1,6 @@
 package tech.chenh.outlast;
 
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ public class Tunnel {
     private final String target;
     private final Consumer<String> onConnect;
 
-    public Tunnel(String source, String target, Consumer<String> onConnect) {
+    public Tunnel(@NonNull String source, @NonNull String target, @NonNull Consumer<@NonNull String> onConnect) {
         this.source = source;
         this.target = target;
         this.onConnect = onConnect;
@@ -64,20 +65,20 @@ public class Tunnel {
         });
     }
 
-    public void sendData(String channel, byte[] content) throws Exception {
+    public void sendData(@NonNull String channel, byte @NonNull [] content) throws Exception {
         send(channel, Data.Type.DATA, content);
     }
 
-    public void sendClose(String channel) throws Exception {
+    public void sendClose(@NonNull String channel) throws Exception {
         send(channel, Data.Type.CLOSE, new byte[0]);
     }
 
-    private void send(String channel, Data.Type type, byte[] content) throws Exception {
+    private void send(@NonNull String channel, Data.@NonNull Type type, byte @NonNull [] content) throws Exception {
         List<Data> dataList = splitPacks(channel, type, content);
         Repository.instance().saveAll(dataList);
     }
 
-    private List<Data> splitPacks(String channel, Data.Type type, byte[] content) {
+    private @NonNull List<@NonNull Data> splitPacks(@NonNull String channel, Data.@NonNull Type type, byte @NonNull [] content) {
         List<Data> dataList = new ArrayList<>();
         int packSize = Config.instance().getEncryptableDataSize();
         int total = (int) Math.ceil(content.length * 1.0 / packSize);
@@ -96,7 +97,7 @@ public class Tunnel {
         return dataList;
     }
 
-    public synchronized void listen(String channel, BiConsumer<Data.Type, byte[]> listener) {
+    public synchronized void listen(@NonNull String channel, @NonNull BiConsumer<Data.@NonNull Type, byte @NonNull []> listener) {
         if (listening.contains(channel)) {
             return;
         }
@@ -131,7 +132,7 @@ public class Tunnel {
         });
     }
 
-    public void remove(String channel) {
+    public void remove(@NonNull String channel) {
         listening.remove(channel);
     }
 

@@ -13,7 +13,7 @@ public class Encryption {
 
     private static final Logger LOG = LoggerFactory.getLogger(Encryption.class.getName());
 
-    public static @NonNull String encrypt(@NonNull byte[] content, @NonNull String encryptionKey) {
+    public static @NonNull String encrypt(byte @NonNull [] content, @NonNull String encryptionKey) {
         try {
             SecretKeySpec sk = new SecretKeySpec(encryptionKey.getBytes(), "AES");
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
@@ -26,7 +26,7 @@ public class Encryption {
         }
     }
 
-    public static @NonNull byte[] decrypt(@NonNull String content, @NonNull String decryptionKey) {
+    public static byte @NonNull [] decrypt(@NonNull String content, @NonNull String decryptionKey) {
         try {
             SecretKeySpec sk = new SecretKeySpec(decryptionKey.getBytes(), "AES");
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");

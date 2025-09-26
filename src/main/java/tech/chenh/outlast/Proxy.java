@@ -1,5 +1,7 @@
 package tech.chenh.outlast;
 
+import lombok.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +49,7 @@ public class Proxy {
         });
     }
 
-    private void readClientData(Socket client) {
+    private void readClientData(@NonNull Socket client) {
         String channel = UUID.randomUUID().toString();
         clients.put(channel, client);
 
@@ -64,7 +66,7 @@ public class Proxy {
         }
     }
 
-    private void onAgentConnect(String channel) {
+    private void onAgentConnect(@NonNull String channel) {
         tunnel.listen(channel, (type, data) -> {
             switch (type) {
                 case DATA:
@@ -77,7 +79,7 @@ public class Proxy {
         });
     }
 
-    private void onAgentData(String channel, byte[] data) {
+    private void onAgentData(@NonNull String channel, byte @NonNull [] data) {
         Socket client = clients.get(channel);
         if (client == null) {
             sendAgentClose(channel);
@@ -93,12 +95,12 @@ public class Proxy {
         }
     }
 
-    private void onAgentClose(String channel) {
+    private void onAgentClose(@NonNull String channel) {
         closeSocket(clients.remove(channel));
         tunnel.remove(channel);
     }
 
-    private void sendAgentClose(String channel) {
+    private void sendAgentClose(@NonNull String channel) {
         closeSocket(clients.remove(channel));
         try {
             tunnel.sendClose(channel);
@@ -108,7 +110,7 @@ public class Proxy {
         tunnel.remove(channel);
     }
 
-    private void closeSocket(Socket socket) {
+    private void closeSocket(@Nullable Socket socket) {
         try {
             if (socket != null) {
                 socket.close();
