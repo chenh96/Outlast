@@ -10,9 +10,9 @@
     <description>Outlast</description>
 
     <properties>
-        <mavan.compiler.source>21</mavan.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <maven.compiler.release>21</maven.compiler.release>
+        <mavan.compiler.source>25</mavan.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -82,20 +82,6 @@
                         </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/LICENSE*</exclude>
-                                <exclude>META-INF/NOTICE*</exclude>
-                                <exclude>META-INF/DEPENDENCIES</exclude>
-                                <exclude>META-INF/MANIFEST.MF</exclude>
-                                <exclude>module-info.class</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
             </plugin>
         </plugins>
     </build>
