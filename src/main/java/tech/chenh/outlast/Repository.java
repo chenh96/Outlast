@@ -30,6 +30,7 @@ public class Repository {
         hikariConfig.setDriverClassName(config.getDatasourceDriverClass());
         hikariConfig.setMinimumIdle(config.getDatasourceMinPoolSize());
         hikariConfig.setMaximumPoolSize(config.getDatasourceMaxPoolSize());
+        hikariConfig.setMaxLifetime(config.getDatasourceMaxLifetime());
         hikariConfig.setIdleTimeout(config.getDatasourceIdleTimeout());
 
         dataSource = new HikariDataSource(hikariConfig);

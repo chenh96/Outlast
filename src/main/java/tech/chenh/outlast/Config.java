@@ -18,6 +18,7 @@ public class Config {
     private final int datasourceMinPoolSize;
     private final int datasourceMaxPoolSize;
     private final int datasourceIdleTimeout;
+    private final int datasourceMaxLifetime;
 
     private final String mode;
     private final int proxyPort;
@@ -53,6 +54,7 @@ public class Config {
         this.datasourceMinPoolSize = Integer.parseInt(props.getProperty("datasource.min-pool-size"));
         this.datasourceMaxPoolSize = Integer.parseInt(props.getProperty("datasource.max-pool-size"));
         this.datasourceIdleTimeout = Integer.parseInt(props.getProperty("datasource.idle-timeout"));
+        this.datasourceMaxLifetime = Integer.parseInt(props.getProperty("datasource.max-lifetime"));
 
         this.mode = props.getProperty("outlast.mode");
         this.proxyPort = Integer.parseInt(props.getProperty("outlast.proxy-port"));
