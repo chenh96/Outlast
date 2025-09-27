@@ -111,10 +111,11 @@ public class Proxy {
     }
 
     private void closeSocket(@Nullable Socket socket) {
+        if (socket == null) {
+            return;
+        }
         try {
-            if (socket != null) {
-                socket.close();
-            }
+            socket.close();
         } catch (Exception e) {
             LOG.debug(e.getMessage(), e);
         }
