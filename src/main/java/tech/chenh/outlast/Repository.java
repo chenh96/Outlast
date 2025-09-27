@@ -2,7 +2,7 @@ package tech.chenh.outlast;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import lombok.NonNull;
+import org.jspecify.annotations.NonNull;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -128,7 +128,7 @@ public class Repository {
             """.replace("{DATA_TABLE}", dataTable);
         if (!existedChannels.isEmpty()) {
             sql += " AND CHANNEL NOT IN "
-                + "?".repeat(existedChannels.size()).chars().mapToObj(c -> "?").collect(Collectors.joining(", ", "(", ")"));
+                + existedChannels.stream().map(_ -> "?").collect(Collectors.joining(", ", "(", ")"));
         }
         try (
             Connection connection = dataSource.getConnection();

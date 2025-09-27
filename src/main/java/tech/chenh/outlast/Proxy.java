@@ -1,6 +1,6 @@
 package tech.chenh.outlast;
 
-import lombok.NonNull;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
