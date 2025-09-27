@@ -128,7 +128,7 @@ public class Repository {
             """.replace("{DATA_TABLE}", dataTable);
         if (!existedChannels.isEmpty()) {
             sql += " AND CHANNEL NOT IN "
-                + existedChannels.stream().map(_ -> "?").collect(Collectors.joining(", ", "(", ")"));
+                + existedChannels.stream().map(c -> "?").collect(Collectors.joining(", ", "(", ")"));
         }
         try (
             Connection connection = dataSource.getConnection();
