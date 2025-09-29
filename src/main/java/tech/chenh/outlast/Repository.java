@@ -46,7 +46,7 @@ public class Repository {
         return INSTANCE;
     }
 
-    public void saveAll(@NonNull List<@NonNull Data> dataList) throws SQLException {
+    public void saveAll(@NonNull List<Data> dataList) throws SQLException {
         if (dataList.isEmpty()) {
             return;
         }
@@ -71,7 +71,7 @@ public class Repository {
         }
     }
 
-    public @NonNull List<@NonNull Data> popReceivable(@NonNull String target, @NonNull String channel, int limit) throws SQLException {
+    public @NonNull List<Data> popReceivable(@NonNull String target, @NonNull String channel, int limit) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             List<Data> dataList = new ArrayList<>();
 
@@ -120,7 +120,7 @@ public class Repository {
         }
     }
 
-    public @NonNull Set<@NonNull String> findNewChannels(@NonNull String target, @NonNull List<@NonNull String> existedChannels) throws SQLException {
+    public @NonNull Set<String> findNewChannels(@NonNull String target, @NonNull List<String> existedChannels) throws SQLException {
         String sql = """
             SELECT DISTINCT CHANNEL
             FROM {DATA_TABLE}

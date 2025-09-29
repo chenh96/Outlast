@@ -27,7 +27,7 @@ public class Tunnel {
     private final String target;
     private final Consumer<String> onConnect;
 
-    public Tunnel(@NonNull String source, @NonNull String target, @NonNull Consumer<@NonNull String> onConnect) {
+    public Tunnel(@NonNull String source, @NonNull String target, @NonNull Consumer<String> onConnect) {
         this.source = source;
         this.target = target;
         this.onConnect = onConnect;
@@ -78,7 +78,7 @@ public class Tunnel {
         Repository.instance().saveAll(dataList);
     }
 
-    private @NonNull List<@NonNull Data> splitPacks(@NonNull String channel, Data.@NonNull Type type, byte @NonNull [] content) {
+    private @NonNull List<Data> splitPacks(@NonNull String channel, Data.@NonNull Type type, byte @NonNull [] content) {
         List<Data> dataList = new ArrayList<>();
         int packSize = Config.instance().getEncryptableDataSize();
         int total = (int) Math.ceil(content.length * 1.0 / packSize);
