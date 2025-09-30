@@ -69,8 +69,6 @@ public class Config {
         this.encryptionKey = props.getProperty("outlast.encryption-key");
         this.dataTable = props.getProperty("outlast.data-table");
         this.dataIdSeq = props.getProperty("outlast.data-id-seq");
-
-        INSTANCE = this;
     }
 
     public static synchronized @NonNull Config instance() {
