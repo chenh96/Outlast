@@ -45,7 +45,7 @@
     </dependencies>
 
     <build>
-        <finalName>Outlast</finalName>
+        <finalName>outlast</finalName>
 
         <plugins>
             <plugin>
